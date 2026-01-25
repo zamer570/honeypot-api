@@ -1,0 +1,12 @@
+server:
+  port: 8080
+#honeypot:
+#  api-key: abcd
+#  guvi-callback-url: https://hackathon.guvi.in/api/updateHoneyPotFinalResult
+#
+#anthropic:
+#  api-key: YOUR_ANTHROPIC_API_KEY
+
+spring:
+  application:
+    name: honey-pot
