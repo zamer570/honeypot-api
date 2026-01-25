@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/honeypot")
 public class HoneypotController {
 
-//    @Value("${honeypot.api-key}")
+    @Value("${honeypot.api-key}")
     private String apiKey;
 
     private final SessionManager sessionManager;
