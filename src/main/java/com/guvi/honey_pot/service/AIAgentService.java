@@ -15,8 +15,8 @@ import java.util.*;
 @Service
 public class AIAgentService {
 
-//    @Value("${anthropic.api-key}")
-    private String anthropicApiKey;
+    @Value("${GEMINI_API_KEY}")
+    private String geminiApiKey;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -34,33 +34,44 @@ public class AIAgentService {
         String systemPrompt = buildSystemPrompt(persona, scamDetected);
         String conversationContext = buildConversationContext(history, scammerMessage);
 
-        try {
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", "claude-sonnet-4-20250514");
-            requestBody.put("max_tokens", 200);
-            requestBody.put("system", systemPrompt);
-            requestBody.put("messages", List.of(
-                    Map.of("role", "user", "content", conversationContext)
-            ));
+    try {
+        String combinedPrompt = systemPrompt + "\n\n" + conversationContext;
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.anthropic.com/v1/messages"))
-                    .header("Content-Type", "application/json")
-                    .header("x-api-key", anthropicApiKey)
-                    .header("anthropic-version", "2023-06-01")
-                    .POST(HttpRequest.BodyPublishers.ofString(
-                            objectMapper.writeValueAsString(requestBody)))
-                    .build();
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(
+                Map.of("parts", List.of(
+                        Map.of("text", combinedPrompt)
+                ))
+        ));
+
+        requestBody.put("generationConfig", Map.of(
+                "maxOutputTokens", 200,
+                "temperature", 0.7
+        ));
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"))
+                .header("Content-Type", "application/json")
+                .header("x-goog-api-key", geminiApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        objectMapper.writeValueAsString(requestBody)))
+                .build();
 
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
             Map<String, Object> responseMap = objectMapper.readValue(
                     response.body(), Map.class);
-            List<Map<String, Object>> content =
-                    (List<Map<String, Object>>) responseMap.get("content");
 
-            return (String) content.get(0).get("text");
+            // Parse Gemini response structure
+            List<Map<String, Object>> candidates =
+                    (List<Map<String, Object>>) responseMap.get("candidates");
+            Map<String, Object> content =
+                    (Map<String, Object>) candidates.get(0).get("content");
+            List<Map<String, Object>> parts =
+                    (List<Map<String, Object>>) content.get("parts");
+
+            return (String) parts.get(0).get("text");
 
         } catch (Exception e) {
             // Fallback to rule-based response

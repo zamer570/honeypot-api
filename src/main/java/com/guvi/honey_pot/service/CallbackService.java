@@ -13,7 +13,7 @@ import java.net.http.HttpResponse;
 @Service
 public class CallbackService {
 
-//    @Value("${honeypot.guvi-callback-url}")
+    @Value("${honeypot.guvi-callback-url}")
     private String callbackUrl;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
